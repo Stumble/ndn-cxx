@@ -28,19 +28,19 @@ namespace tools {
 int
 ndnsec_sign_req(int argc, char** argv)
 {
-  using namespace ndn;
-  using namespace ndn::security;
   namespace po = boost::program_options;
 
-  std::string name;
+  Name name;
   bool isKeyName = false;
 
   po::options_description description(
     "General Usage\n  ndnsec sign-req [-h] [-k] name\nGeneral options");
-  description.add_options()
+  description
+    .add_options()
     ("help,h", "produce help message")
-    ("key,k", "optional, if specified, name is keyName (e.g. /ndn/edu/ucla/alice/ksk-123456789), otherwise identity name")
-    ("name,n", po::value<std::string>(&name), "name, for example, /ndn/edu/ucla/alice");
+    ("key,k", "optional, if specified, name is keyName (e.g., /ndn/edu/ucla/alice/KEY/ksk-123456789), "
+              "otherwise identity name")
+    ("name,n", po::value<Name>(&name), "name, for example, /ndn/edu/ucla/alice");
 
   po::positional_options_description p;
   p.add("name", 1);
@@ -67,28 +67,49 @@ ndnsec_sign_req(int argc, char** argv)
     return 1;
   }
 
-  if (vm.count("key") != 0)
+  if (vm.count("key") != 0) {
     isKeyName = true;
-
-  shared_ptr<v1::IdentityCertificate> selfSignCert;
-
-  ndn::security::v1::KeyChain keyChain;
-
-  if (isKeyName)
-    selfSignCert = keyChain.selfSign(name);
-  else {
-    Name keyName = keyChain.getDefaultKeyNameForIdentity(name);
-    selfSignCert = keyChain.selfSign(keyName);
   }
 
-  if (static_cast<bool>(selfSignCert)) {
-    io::save(*selfSignCert, std::cout);
-    return 0;
+  v2::KeyChain keyChain;
+
+  Identity identity;
+  Key key;
+  if (!isKeyName) {
+    identity = keyChain.getPib().getIdentity(name);
+    key = identity.getDefaultKey();
   }
   else {
-    std::cerr << "ERROR: Public key does not exist" << std::endl;
-    return 1;
+    identity = keyChain.getPib().getIdentity(v2::extractIdentityFromKeyName(name));
+    key = identity.getKey(name);
   }
+
+  // Create signing request (similar to self-signed certificate)
+  v2::Certificate certificate;
+
+  // set name
+  Name certificateName = key.getName();
+  certificateName
+    .append("cert-request")
+    .appendVersion();
+  certificate.setName(certificateName);
+
+  // set metainfo
+  certificate.setContentType(tlv::ContentType_Key);
+  certificate.setFreshnessPeriod(time::hours(1));
+
+  // set content
+  certificate.setContent(key.getPublicKey().buf(), key.getPublicKey().size());
+
+  // set signature-info
+  SignatureInfo signatureInfo;
+  signatureInfo.setValidityPeriod(ValidityPeriod(time::system_clock::now(),
+                                                 time::system_clock::now() + time::days(10)));
+
+  keyChain.sign(certificate, SigningInfo(key).setSignatureInfo(signatureInfo));
+
+  io::save(certificate, std::cout);
+  return 0;
 }
 
 } // namespace tools

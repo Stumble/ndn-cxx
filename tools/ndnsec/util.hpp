@@ -24,7 +24,8 @@
 
 #include "encoding/buffer-stream.hpp"
 #include "security/transform.hpp"
-#include "security/v1/key-chain.hpp"
+#include "security/key-chain.hpp"
+#include "security/v2/additional-description.hpp"
 #include "util/io.hpp"
 
 #include <fstream>
@@ -37,17 +38,25 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include <boost/tokenizer.hpp>
 
 namespace ndn {
 namespace security {
 namespace tools {
 
-bool
-getPassword(std::string& password, const std::string& prompt);
+class CannotLoadCertificate : public std::runtime_error
+{
+public:
+  CannotLoadCertificate(const std::string& msg)
+    : std::runtime_error(msg)
+  {
+  }
+};
 
-ndn::shared_ptr<ndn::security::v1::IdentityCertificate>
-getIdentityCertificate(const std::string& fileName);
+bool
+getPassword(std::string& password, const std::string& prompt, bool shouldConfirm = true);
+
+v2::Certificate
+loadCertificate(const std::string& fileName);
 
 /**
  * @brief An accumulating option value to handle multiple incrementing options.

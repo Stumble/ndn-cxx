@@ -28,21 +28,20 @@ namespace tools {
 int
 ndnsec_set_default(int argc, char** argv)
 {
-  using namespace ndn;
   namespace po = boost::program_options;
 
   std::string certFileName;
   bool isSetDefaultId = true;
   bool isSetDefaultKey = false;
   bool isSetDefaultCert = false;
-  std::string name;
+  Name name;
 
   po::options_description description("General Usage\n  ndnsec set-default [-h] [-k|c] name\nGeneral options");
   description.add_options()
     ("help,h", "produce help message")
     ("default_key,k", "set default key of the identity")
     ("default_cert,c", "set default certificate of the key")
-    ("name,n", po::value<std::string>(&name), "the name to set")
+    ("name,n", po::value<Name>(&name), "the name to set")
     ;
 
   po::positional_options_description p;
@@ -69,8 +68,6 @@ ndnsec_set_default(int argc, char** argv)
     return 1;
   }
 
-  ndn::security::v1::KeyChain keyChain;
-
   if (vm.count("default_key") != 0) {
     isSetDefaultKey = true;
     isSetDefaultId = false;
@@ -80,19 +77,26 @@ ndnsec_set_default(int argc, char** argv)
     isSetDefaultId = false;
   }
 
+  v2::KeyChain keyChain;
+
   if (isSetDefaultId) {
-    Name idName(name);
-    keyChain.setDefaultIdentity(idName);
+    Identity identity = keyChain.getPib().getIdentity(name);
+    keyChain.setDefaultIdentity(identity);
     return 0;
   }
+
   if (isSetDefaultKey) {
-    Name keyName(name);
-    keyChain.setDefaultKeyNameForIdentity(keyName);
+    Identity identity = keyChain.getPib().getIdentity(v2::extractIdentityFromKeyName(name));
+    Key key = identity.getKey(name);
+    keyChain.setDefaultKey(identity, key);
     return 0;
   }
 
   if (isSetDefaultCert) {
-    keyChain.setDefaultCertificateNameForKey(name);
+    Identity identity = keyChain.getPib().getIdentity(v2::extractIdentityFromCertName(name));
+    Key key = identity.getKey(v2::extractKeyNameFromCertName(name));
+    v2::Certificate cert = key.getCertificate(name);
+    keyChain.setDefaultCertificate(key, cert);
     return 0;
   }
 

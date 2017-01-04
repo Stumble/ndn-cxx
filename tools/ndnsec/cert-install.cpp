@@ -35,7 +35,7 @@ public:
   }
 };
 
-ndn::shared_ptr<ndn::security::v1::IdentityCertificate>
+v2::Certificate
 getCertificateHttp(const std::string& host, const std::string& port, const std::string& path)
 {
   using namespace boost::asio::ip;
@@ -84,17 +84,12 @@ getCertificateHttp(const std::string& host, const std::string& port, const std::
     streamSource(requestStream) >> base64Decode(true) >> streamSink(os);
   }
 
-  auto identityCertificate = std::make_shared<ndn::security::v1::IdentityCertificate>();
-  identityCertificate->wireDecode(ndn::Block(os.buf()));
-
-  return identityCertificate;
+  return v2::Certificate(Block(os.buf()));
 }
 
 int
 ndnsec_cert_install(int argc, char** argv)
 {
-  using namespace ndn;
-  using namespace ndn::security;
   namespace po = boost::program_options;
 
   std::string certFileName;
@@ -149,8 +144,9 @@ ndnsec_cert_install(int argc, char** argv)
     isSystemDefault = false;
   }
 
-  shared_ptr<v1::IdentityCertificate> cert;
+  v2::Certificate cert;
 
+  try {
   if (certFileName.find("http://") == 0) {
     std::string host;
     std::string port;
@@ -179,32 +175,42 @@ ndnsec_cert_install(int argc, char** argv)
     cert = getCertificateHttp(host, port, path);
   }
   else {
-    cert = getIdentityCertificate(certFileName);
+    cert = loadCertificate(certFileName);
+  }
+  }
+  catch (const CannotLoadCertificate&) {
+    std::cerr << "ERROR: Cannot load the certificate " << certFileName << std::endl;
+    return 1;
   }
 
-  if (!static_cast<bool>(cert))
-    return 1;
+  v2::KeyChain keyChain;
+  Identity id;
+  Key key;
+  try {
+    id = keyChain.getPib().getIdentity(cert.getIdentity());
+    key = id.getKey(cert.getKeyName());
+  }
+  catch (const Pib::Error& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+  }
 
-  ndn::security::v1::KeyChain keyChain;
+  keyChain.addCertificate(key, cert);
 
   if (isSystemDefault) {
-    keyChain.addCertificateAsIdentityDefault(*cert);
-    Name keyName = cert->getPublicKeyName();
-    Name identity = keyName.getSubName(0, keyName.size() - 1);
-    keyChain.setDefaultIdentity(identity);
+    keyChain.setDefaultIdentity(id);
+    keyChain.setDefaultKey(id, key);
+    keyChain.setDefaultCertificate(key, cert);
   }
   else if (isIdentityDefault) {
-    keyChain.addCertificateAsIdentityDefault(*cert);
+    keyChain.setDefaultKey(id, key);
+    keyChain.setDefaultCertificate(key, cert);
   }
   else if (isKeyDefault) {
-    keyChain.addCertificateAsKeyDefault(*cert);
-  }
-  else {
-    keyChain.addCertificate(*cert);
+    keyChain.setDefaultCertificate(key, cert);
   }
 
-  std::cerr << "OK: certificate with name [" << cert->getName().toUri()
-            << "] has been successfully installed" << std::endl;
+  std::cerr << "OK: certificate with name [" << cert.getName().toUri() << "] "
+            << "has been successfully installed" << std::endl;
 
   return 0;
 }

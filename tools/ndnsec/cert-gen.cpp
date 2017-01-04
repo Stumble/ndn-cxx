@@ -31,26 +31,21 @@ ndnsec_cert_gen(int argc, char** argv)
   using boost::tokenizer;
   using boost::escaped_list_separator;
 
-  using namespace ndn;
   using namespace ndn::time;
-  using namespace ndn::security;
   namespace po = boost::program_options;
 
-  ndn::security::v1::KeyChain keyChain;
+  v2::KeyChain keyChain;
 
   std::string notBeforeStr;
   std::string notAfterStr;
-  std::string subjectName;
   std::string requestFile("-");
   Name signId;
-  std::string subjectInfo;
-  std::vector<std::string> signedInfo;
-  Name certPrefix = ndn::security::v1::KeyChain::DEFAULT_PREFIX; // to avoid displaying the default value
+  std::vector<std::string> infos;
+  std::string issuerId;
 
   po::options_description description(
     "General Usage\n"
-    "  ndnsec cert-gen [-h] [-S date] [-E date] [-N subject-name] [-I subject-info] "
-        "[-s sign-id] [-p cert-prefix] request\n"
+    "  ndnsec cert-gen [-h] [-S date] [-E date] [-I info] [-s sign-id] request\n"
     "General options");
 
   description.add_options()
@@ -59,22 +54,17 @@ ndnsec_cert_gen(int argc, char** argv)
                        "certificate starting date, YYYYMMDDhhmmss (default: now)")
     ("not-after,E",    po::value<std::string>(&notAfterStr),
                        "certificate ending date, YYYYMMDDhhmmss (default: now + 365 days)")
-    ("subject-name,N", po::value<std::string>(&subjectName),
-                       "subject name")
-    ("subject-info,I", po::value<std::string>(&subjectInfo),
-                       "(deprecated, uses 'signed-info') subject info, pairs of OID and string "
-                       " description: \"2.5.4.10 'University of California, Los Angeles'\"")
-    ("signed-info",    po::value<std::vector<std::string> >(&signedInfo),
-                       "a pair of OID and string (must be separated by a single space), e.g., "
-                       "\"2.5.4.10 University of California, Los Angeles\". "
+    ("info,I",         po::value<std::vector<std::string>>(&infos),
+                       "key and value (must be separated by a single space) of the additional "
+                       "description to be included in the issued certificate, e.g., "
+                       "\"affiliation University of California, Los Angeles\". "
                        "May be repeated multiple times")
-    ("sign-id,s",      po::value<Name>(&signId)->default_value(keyChain.getDefaultIdentity()),
+    ("sign-id,s",      po::value<Name>(&signId),
                        "signing identity")
-    ("cert-prefix,p",  po::value<Name>(&certPrefix),
-                       "cert prefix, which is the part of certificate name before "
-                       "KEY component")
     ("request,r",      po::value<std::string>(&requestFile)->default_value("-"),
                        "request file name, - for stdin")
+    ("issuer-id,i",    po::value<std::string>(&issuerId)->default_value("NA"),
+                       "issuer's ID to be included as part of the issued certificate name")
     ;
 
   po::positional_options_description p;
@@ -102,44 +92,18 @@ ndnsec_cert_gen(int argc, char** argv)
     return 1;
   }
 
-  std::vector<v1::CertificateSubjectDescription> subjectDescription;
-  subjectDescription.push_back(v1::CertificateSubjectDescription(oid::ATTRIBUTE_NAME, subjectName));
+  v2::AdditionalDescription additionalDescription;
 
-  // 'subjectInfo' is deprecated and the following block will be removed eventually
-  tokenizer<escaped_list_separator<char>> subjectInfoItems(subjectInfo,
-                                                           escaped_list_separator<char>("\\", " \t",
-                                                                                        "'\""));
-
-  tokenizer<escaped_list_separator<char>>::iterator it = subjectInfoItems.begin();
-
-  while (it != subjectInfoItems.end()) {
-    std::string oid = *it;
-
-    it++;
-    if (it == subjectInfoItems.end()) {
-      std::cerr << "ERROR: unmatched info for oid [" << oid << "]" << std::endl;
-      return 1;
-    }
-
-    std::string value = *it;
-
-    subjectDescription.push_back(v1::CertificateSubjectDescription(Oid(oid), value));
-
-    it++;
-  }
-
-  // new 'signedInfo' processing
-  for (std::vector<std::string>::const_iterator info = signedInfo.begin(); info != signedInfo.end();
-       ++info) {
-    size_t pos = info->find(" ");
+  for (const auto& info : infos) {
+    size_t pos = info.find(" ");
     if (pos == std::string::npos) {
-      std::cerr << "ERROR: incorrectly formatted signed info block [" << *info << "]" << std::endl;
+      std::cerr << "ERROR: incorrectly formatted info block [" << info << "]" << std::endl;
       return 1;
     }
-    Oid oid(info->substr(0, pos));
-    std::string value = info->substr(pos + 1);
+    std::string key = info.substr(0, pos);
+    std::string value = info.substr(pos + 1);
 
-    subjectDescription.push_back(v1::CertificateSubjectDescription(oid, value));
+    additionalDescription.set(key, value);
   }
 
   system_clock::TimePoint notBefore;
@@ -173,33 +137,35 @@ ndnsec_cert_gen(int argc, char** argv)
     return 1;
   }
 
-  shared_ptr<v1::IdentityCertificate> selfSignedCertificate = getIdentityCertificate(requestFile);
+  v2::Certificate certRequest = loadCertificate(requestFile);
 
-  if (!static_cast<bool>(selfSignedCertificate)) {
-    std::cerr << "ERROR: input error" << std::endl;
-    return 1;
+  v2::Certificate cert;
+
+  Name certName = certRequest.getKeyName();
+  certName
+    .append(issuerId)
+    .appendVersion();
+
+  cert.setName(certName);
+  cert.setContent(certRequest.getContent()); // should we validate that the content is a public key?
+
+  // @TODO add ability to customize
+  cert.setFreshnessPeriod(time::hours(1));
+
+  SignatureInfo signatureInfo;
+  signatureInfo.setValidityPeriod(ValidityPeriod(notBefore, notAfter));
+
+  Identity identity;
+  if (vm.count("sign-id") == 0) {
+    identity = keyChain.getPib().getDefaultIdentity();
+  }
+  else {
+    identity = keyChain.getPib().getIdentity(signId);
   }
 
-  Name keyName = selfSignedCertificate->getPublicKeyName();
+  keyChain.sign(cert, SigningInfo(identity).setSignatureInfo(signatureInfo));
 
-  shared_ptr<v1::IdentityCertificate> certificate =
-    keyChain.prepareUnsignedIdentityCertificate(keyName, selfSignedCertificate->getPublicKeyInfo(),
-                                                signId, notBefore, notAfter, subjectDescription,
-                                                certPrefix);
-
-  if (!static_cast<bool>(certificate)) {
-    std::cerr << "ERROR: key name is not formated correctly or does not match certificate name"
-              << std::endl;
-    return 1;
-  }
-
-  keyChain.createIdentity(signId);
-  Name signingCertificateName = keyChain.getDefaultCertificateNameForIdentity(signId);
-  keyChain.sign(*certificate,
-                security::SigningInfo(security::SigningInfo::SIGNER_TYPE_CERT,
-                                      signingCertificateName));
-
-  Block wire = certificate->wireEncode();
+  Block wire = cert.wireEncode();
 
   try {
     transform::bufferSource(wire.wire(), wire.size()) >> transform::base64Encode(true) >>
