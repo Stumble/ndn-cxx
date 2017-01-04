@@ -50,12 +50,11 @@
 
 #include "../name.hpp"
 #include "../face.hpp"
-#include "../security/v1/key-chain.hpp"
+#include "../security/v2/key-chain.hpp"
 
 #include "concepts.hpp"
 
 namespace ndn {
-
 namespace util {
 
 /** \brief provides a publisher of Notification Stream
@@ -67,7 +66,7 @@ class NotificationStream : noncopyable
 public:
   BOOST_CONCEPT_ASSERT((WireEncodable<Notification>));
 
-  NotificationStream(Face& face, const Name& prefix, KeyChain& keyChain)
+  NotificationStream(Face& face, const Name& prefix, security::v2::KeyChain& keyChain)
     : m_face(face)
     , m_prefix(prefix)
     , m_keyChain(keyChain)
@@ -99,7 +98,7 @@ public:
 private:
   Face& m_face;
   const Name m_prefix;
-  KeyChain& m_keyChain;
+  security::v2::KeyChain& m_keyChain;
   uint64_t m_sequenceNo;
 };
 

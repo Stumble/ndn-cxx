@@ -198,7 +198,7 @@ public: // constructors
    *                          parsed or specifies an unsupported protocol
    * @note shared_ptr is passed by value because ownership is shared with this class
    */
-  Face(shared_ptr<Transport> transport, KeyChain& keyChain);
+  Face(shared_ptr<Transport> transport, security::v2::KeyChain& keyChain);
 
   /**
    * @brief Create Face using given transport and IO service
@@ -229,7 +229,7 @@ public: // constructors
    *                          parsed or specifies an unsupported protocol
    * @note shared_ptr is passed by value because ownership is shared with this class
    */
-  Face(shared_ptr<Transport> transport, boost::asio::io_service& ioService, KeyChain& keyChain);
+  Face(shared_ptr<Transport> transport, boost::asio::io_service& ioService, security::v2::KeyChain& keyChain);
 
   virtual
   ~Face();
@@ -721,7 +721,7 @@ private:
    * @note shared_ptr is passed by value because ownership is transferred to this function
    */
   void
-  construct(shared_ptr<Transport> transport, KeyChain& keyChain);
+  construct(shared_ptr<Transport> transport, security::v2::KeyChain& keyChain);
 
   void
   onReceiveElement(const Block& blockFromDaemon);
@@ -744,7 +744,7 @@ private:
    *       currently Face does not keep the KeyChain passed in constructor
    *       because it's not needed, but this may change in the future
    */
-  unique_ptr<KeyChain> m_internalKeyChain;
+  unique_ptr<security::v2::KeyChain> m_internalKeyChain;
 
   unique_ptr<nfd::Controller> m_nfdController;
 

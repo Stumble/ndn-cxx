@@ -37,7 +37,7 @@ using namespace ndn::tests;
 BOOST_AUTO_TEST_SUITE(Mgmt)
 BOOST_AUTO_TEST_SUITE(TestDispatcher)
 
-class DispatcherFixture : public IdentityManagementV1TimeFixture
+class DispatcherFixture : public IdentityManagementTimeFixture
 {
 public:
   DispatcherFixture()

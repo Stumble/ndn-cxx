@@ -47,7 +47,7 @@ namespace ndn {
 Face::Face(shared_ptr<Transport> transport)
   : m_internalIoService(new boost::asio::io_service())
   , m_ioService(*m_internalIoService)
-  , m_internalKeyChain(new KeyChain())
+  , m_internalKeyChain(new security::v2::KeyChain())
   , m_impl(make_shared<Impl>(*this))
 {
   construct(transport, *m_internalKeyChain);
@@ -55,7 +55,7 @@ Face::Face(shared_ptr<Transport> transport)
 
 Face::Face(boost::asio::io_service& ioService)
   : m_ioService(ioService)
-  , m_internalKeyChain(new KeyChain())
+  , m_internalKeyChain(new security::v2::KeyChain())
   , m_impl(make_shared<Impl>(*this))
 {
   construct(nullptr, *m_internalKeyChain);
@@ -64,13 +64,13 @@ Face::Face(boost::asio::io_service& ioService)
 Face::Face(const std::string& host, const std::string& port)
   : m_internalIoService(new boost::asio::io_service())
   , m_ioService(*m_internalIoService)
-  , m_internalKeyChain(new KeyChain())
+  , m_internalKeyChain(new security::v2::KeyChain())
   , m_impl(make_shared<Impl>(*this))
 {
   construct(make_shared<TcpTransport>(host, port), *m_internalKeyChain);
 }
 
-Face::Face(shared_ptr<Transport> transport, KeyChain& keyChain)
+Face::Face(shared_ptr<Transport> transport, security::v2::KeyChain& keyChain)
   : m_internalIoService(new boost::asio::io_service())
   , m_ioService(*m_internalIoService)
   , m_impl(make_shared<Impl>(*this))
@@ -80,13 +80,13 @@ Face::Face(shared_ptr<Transport> transport, KeyChain& keyChain)
 
 Face::Face(shared_ptr<Transport> transport, boost::asio::io_service& ioService)
   : m_ioService(ioService)
-  , m_internalKeyChain(new KeyChain())
+  , m_internalKeyChain(new security::v2::KeyChain())
   , m_impl(make_shared<Impl>(*this))
 {
   construct(transport, *m_internalKeyChain);
 }
 
-Face::Face(shared_ptr<Transport> transport, boost::asio::io_service& ioService, KeyChain& keyChain)
+Face::Face(shared_ptr<Transport> transport, boost::asio::io_service& ioService, security::v2::KeyChain& keyChain)
   : m_ioService(ioService)
   , m_impl(make_shared<Impl>(*this))
 {
@@ -139,7 +139,7 @@ Face::makeDefaultTransport()
 }
 
 void
-Face::construct(shared_ptr<Transport> transport, KeyChain& keyChain)
+Face::construct(shared_ptr<Transport> transport, security::v2::KeyChain& keyChain)
 {
   if (transport == nullptr) {
     transport = makeDefaultTransport();

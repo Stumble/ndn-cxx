@@ -31,6 +31,8 @@
 namespace ndn {
 namespace util {
 
+using security::v2::KeyChain;
+
 class DummyClientFace::Transport : public ndn::Transport
 {
 public:
@@ -86,13 +88,13 @@ public:
 
 DummyClientFace::DummyClientFace(const Options& options/* = DummyClientFace::DEFAULT_OPTIONS*/)
   : Face(make_shared<DummyClientFace::Transport>())
-  , m_internalKeyChain(new security::v1::KeyChain)
+  , m_internalKeyChain(new security::v2::KeyChain)
   , m_keyChain(*m_internalKeyChain)
 {
   this->construct(options);
 }
 
-DummyClientFace::DummyClientFace(security::v1::KeyChain& keyChain,
+DummyClientFace::DummyClientFace(security::v2::KeyChain& keyChain,
                                  const Options& options/* = DummyClientFace::DEFAULT_OPTIONS*/)
   : Face(make_shared<DummyClientFace::Transport>(), keyChain)
   , m_keyChain(keyChain)
@@ -103,13 +105,13 @@ DummyClientFace::DummyClientFace(security::v1::KeyChain& keyChain,
 DummyClientFace::DummyClientFace(boost::asio::io_service& ioService,
                                  const Options& options/* = DummyClientFace::DEFAULT_OPTIONS*/)
   : Face(make_shared<DummyClientFace::Transport>(), ioService)
-  , m_internalKeyChain(new security::v1::KeyChain)
+  , m_internalKeyChain(new security::v2::KeyChain)
   , m_keyChain(*m_internalKeyChain)
 {
   this->construct(options);
 }
 
-DummyClientFace::DummyClientFace(boost::asio::io_service& ioService, security::v1::KeyChain& keyChain,
+DummyClientFace::DummyClientFace(boost::asio::io_service& ioService, security::v2::KeyChain& keyChain,
                                  const Options& options/* = DummyClientFace::DEFAULT_OPTIONS*/)
   : Face(make_shared<DummyClientFace::Transport>(), ioService, keyChain)
   , m_keyChain(keyChain)
