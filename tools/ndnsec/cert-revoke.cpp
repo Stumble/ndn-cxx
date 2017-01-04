@@ -17,14 +17,13 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
-#ifndef NDN_TOOLS_NDNSEC_CERT_REVOKE_HPP
-#define NDN_TOOLS_NDNSEC_CERT_REVOKE_HPP
-
 #include "util.hpp"
+
+namespace ndn {
+namespace security {
+namespace tools {
 
 int
 ndnsec_cert_revoke(int argc, char** argv)
@@ -58,8 +57,7 @@ ndnsec_cert_revoke(int argc, char** argv)
 
   po::variables_map vm;
   try {
-    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(),
-              vm);
+    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(), vm);
     po::notify(vm);
   }
   catch (const std::exception& e) {
@@ -97,14 +95,13 @@ ndnsec_cert_revoke(int argc, char** argv)
     else {
       const Signature& signature = revokedCertificate->getSignature();
       if (!signature.hasKeyLocator() ||
-          signature.getKeyLocator().getType() != KeyLocator::KeyLocator_Name)
-        {
-          std::cerr << "ERROR: Invalid certificate to revoke" << std::endl;
-          return 1;
-        }
+          signature.getKeyLocator().getType() != KeyLocator::KeyLocator_Name) {
+        std::cerr << "ERROR: Invalid certificate to revoke" << std::endl;
+        return 1;
+      }
 
-      keyName = v1::IdentityCertificate::certificateNameToPublicKeyName(
-                  signature.getKeyLocator().getName());
+      keyName =
+        v1::IdentityCertificate::certificateNameToPublicKeyName(signature.getKeyLocator().getName());
     }
 
     Name certName;
@@ -121,14 +118,11 @@ ndnsec_cert_revoke(int argc, char** argv)
           .append("ID-CERT");
       }
       else {
-        std::cerr << "ERROR: certificate prefix does not match the revoked certificate"
-                  << std::endl;
+        std::cerr << "ERROR: certificate prefix does not match the revoked certificate" << std::endl;
         return 1;
       }
     }
-    certName
-      .appendVersion()
-      .append("REVOKED");
+    certName.appendVersion().append("REVOKED");
 
     Data revocationCert;
     revocationCert.setName(certName);
@@ -163,8 +157,9 @@ ndnsec_cert_revoke(int argc, char** argv)
   }
 
   try {
-    transform::bufferSource(wire.wire(), wire.size()) >> transform::base64Encode(true) >> transform::streamSink(std::cout);
-    }
+    transform::bufferSource(wire.wire(), wire.size()) >> transform::base64Encode(true) >>
+      transform::streamSink(std::cout);
+  }
   catch (const transform::Error& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
     return 1;
@@ -173,4 +168,6 @@ ndnsec_cert_revoke(int argc, char** argv)
   return 0;
 }
 
-#endif // NDN_TOOLS_NDNSEC_CERT_REVOKE_HPP
+} // namespace tools
+} // namespace security
+} // namespace ndn

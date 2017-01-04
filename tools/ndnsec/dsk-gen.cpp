@@ -17,14 +17,13 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
-#ifndef NDN_TOOLS_NDNSEC_DSK_GEN_HPP
-#define NDN_TOOLS_NDNSEC_DSK_GEN_HPP
-
 #include "util.hpp"
+
+namespace ndn {
+namespace security {
+namespace tools {
 
 int
 ndnsec_dsk_gen(int argc, char** argv)
@@ -82,7 +81,7 @@ ndnsec_dsk_gen(int argc, char** argv)
   try {
     Name defaultCertName = keyChain.getDefaultCertificateNameForIdentity(identityName);
     bool isDefaultDsk = false;
-    std::string keyUsageTag = defaultCertName.get(-3).toUri().substr(0,4);
+    std::string keyUsageTag = defaultCertName.get(-3).toUri().substr(0, 4);
     if (keyUsageTag == "ksk-")
       isDefaultDsk = false;
     else if (keyUsageTag == "dsk-")
@@ -122,8 +121,7 @@ ndnsec_dsk_gen(int argc, char** argv)
 
     Name newKeyName;
     switch (keyType) {
-    case 'r':
-      {
+      case 'r': {
         RsaKeyParams params;
         newKeyName = keyChain.generateRsaKeyPair(Name(identityName), false, params.getKeySize());
         if (0 == newKeyName.size()) {
@@ -132,8 +130,7 @@ ndnsec_dsk_gen(int argc, char** argv)
         }
         break;
       }
-    case 'e':
-      {
+      case 'e': {
         EcKeyParams params;
         newKeyName = keyChain.generateEcKeyPair(Name(identityName), false, params.getKeySize());
         if (0 == newKeyName.size()) {
@@ -142,17 +139,15 @@ ndnsec_dsk_gen(int argc, char** argv)
         }
         break;
       }
-    default:
-      std::cerr << "ERROR: Unrecongized key type" << "\n";
-      std::cerr << description << std::endl;
-      return 1;
+      default:
+        std::cerr << "ERROR: Unrecongized key type"
+                  << "\n";
+        std::cerr << description << std::endl;
+        return 1;
     }
 
     Name certName = newKeyName.getPrefix(-1);
-    certName.append("KEY")
-      .append(newKeyName.get(-1))
-      .append("ID-CERT")
-      .appendVersion();
+    certName.append("KEY").append(newKeyName.get(-1)).append("ID-CERT").appendVersion();
 
     shared_ptr<v1::IdentityCertificate> certificate =
       keyChain.prepareUnsignedIdentityCertificate(newKeyName,
@@ -164,7 +159,8 @@ ndnsec_dsk_gen(int argc, char** argv)
     if (static_cast<bool>(certificate))
       certificate->encode();
     else {
-      std::cerr << "ERROR: Cannot format the certificate of the requested dsk." << "\n";
+      std::cerr << "ERROR: Cannot format the certificate of the requested dsk."
+                << "\n";
       return 1;
     }
 
@@ -173,8 +169,8 @@ ndnsec_dsk_gen(int argc, char** argv)
 
     keyChain.addCertificateAsIdentityDefault(*certificate);
 
-    std::cerr << "OK: dsk certificate with name [" << certificate->getName() <<
-      "] has been successfully installed\n";
+    std::cerr << "OK: dsk certificate with name [" << certificate->getName()
+              << "] has been successfully installed\n";
     return 0;
   }
   catch (std::runtime_error& e) {
@@ -183,4 +179,6 @@ ndnsec_dsk_gen(int argc, char** argv)
   }
 }
 
-#endif // NDN_TOOLS_NDNSEC_DSK_GEN_HPP
+} // namespace tools
+} // namespace security
+} // namespace ndn

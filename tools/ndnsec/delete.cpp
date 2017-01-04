@@ -17,14 +17,13 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
-#ifndef NDN_TOOLS_NDNSEC_DELETE_HPP
-#define NDN_TOOLS_NDNSEC_DELETE_HPP
-
 #include "util.hpp"
+
+namespace ndn {
+namespace security {
+namespace tools {
 
 int
 ndnsec_delete(int argc, char** argv)
@@ -55,8 +54,7 @@ ndnsec_delete(int argc, char** argv)
 
   po::variables_map vm;
   try {
-    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(),
-              vm);
+    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(), vm);
     po::notify(vm);
   }
   catch (const std::exception& e) {
@@ -66,7 +64,7 @@ ndnsec_delete(int argc, char** argv)
   }
 
   if (vm.count("help") != 0) {
-    std::cerr << description << std::endl;;
+    std::cerr << description << std::endl;
     return 0;
   }
 
@@ -95,8 +93,7 @@ ndnsec_delete(int argc, char** argv)
       std::cerr << "OK: Delete certificate: " << name << std::endl;
     }
     else if (isDeleteKey) {
-      if (!keyChain.doesPublicKeyExist(name) &&
-          !keyChain.doesKeyExistInTpm(name, KeyClass::PRIVATE)) {
+      if (!keyChain.doesPublicKeyExist(name) && !keyChain.doesKeyExistInTpm(name, KeyClass::PRIVATE)) {
         std::cerr << "ERROR: Key does not exist: " << name << std::endl;
         return 1;
       }
@@ -130,4 +127,6 @@ ndnsec_delete(int argc, char** argv)
   return 0;
 }
 
-#endif // NDN_TOOLS_NDNSEC_DELETE_HPP
+} // namespace tools
+} // namespace security
+} // namespace ndn

@@ -17,14 +17,13 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
-#ifndef NDN_TOOLS_NDNSEC_EXPORT_HPP
-#define NDN_TOOLS_NDNSEC_EXPORT_HPP
-
 #include "util.hpp"
+
+namespace ndn {
+namespace security {
+namespace tools {
 
 int
 ndnsec_export(int argc, char** argv)
@@ -50,8 +49,7 @@ ndnsec_export(int argc, char** argv)
 
   po::variables_map vm;
   try {
-    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(),
-              vm);
+    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(), vm);
     po::notify(vm);
   }
   catch (const std::exception& e) {
@@ -80,8 +78,8 @@ ndnsec_export(int argc, char** argv)
   Name identity(identityStr);
   if (!isPrivateExport) {
     ndn::security::v1::KeyChain keyChain;
-    shared_ptr<security::v1::IdentityCertificate> cert
-      = keyChain.getCertificate(keyChain.getDefaultCertificateNameForIdentity(identity));
+    shared_ptr<security::v1::IdentityCertificate> cert =
+      keyChain.getCertificate(keyChain.getDefaultCertificateNameForIdentity(identity));
 
     if (output == "-")
       io::save(*cert, std::cout);
@@ -104,7 +102,8 @@ ndnsec_export(int argc, char** argv)
           return 1;
         }
       }
-      shared_ptr<ndn::security::v1::SecuredBag> securedBag = keyChain.exportIdentity(identity, exportPassword);
+      shared_ptr<ndn::security::v1::SecuredBag> securedBag =
+        keyChain.exportIdentity(identity, exportPassword);
       memset(const_cast<char*>(exportPassword.c_str()), 0, exportPassword.size());
 
       if (output == "-")
@@ -122,4 +121,6 @@ ndnsec_export(int argc, char** argv)
   }
 }
 
-#endif // NDN_TOOLS_NDNSEC_EXPORT_HPP
+} // namespace tools
+} // namespace security
+} // namespace ndn

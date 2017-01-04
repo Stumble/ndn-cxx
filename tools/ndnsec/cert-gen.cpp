@@ -17,14 +17,13 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
-#ifndef NDN_TOOLS_NDNSEC_CERT_GEN_HPP
-#define NDN_TOOLS_NDNSEC_CERT_GEN_HPP
-
 #include "util.hpp"
+
+namespace ndn {
+namespace security {
+namespace tools {
 
 int
 ndnsec_cert_gen(int argc, char** argv)
@@ -82,63 +81,56 @@ ndnsec_cert_gen(int argc, char** argv)
   p.add("request", 1);
 
   po::variables_map vm;
-  try
-    {
-      po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(),
-                vm);
-      po::notify(vm);
-    }
-  catch (const std::exception& e)
-    {
-      std::cerr << "ERROR: " << e.what() << std::endl;
-      return 1;
-    }
+  try {
+    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(), vm);
+    po::notify(vm);
+  }
+  catch (const std::exception& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 1;
+  }
 
-  if (vm.count("help") != 0)
-    {
-      std::cout << description << std::endl;
-      return 0;
-    }
+  if (vm.count("help") != 0) {
+    std::cout << description << std::endl;
+    return 0;
+  }
 
-  if (vm.count("subject-name") == 0)
-    {
-      std::cerr << "ERROR: subject name must be specified" << std::endl
-                << std::endl
-                << description << std::endl;
-      return 1;
-    }
+  if (vm.count("subject-name") == 0) {
+    std::cerr << "ERROR: subject name must be specified" << std::endl
+              << std::endl
+              << description << std::endl;
+    return 1;
+  }
 
   std::vector<v1::CertificateSubjectDescription> subjectDescription;
   subjectDescription.push_back(v1::CertificateSubjectDescription(oid::ATTRIBUTE_NAME, subjectName));
 
   // 'subjectInfo' is deprecated and the following block will be removed eventually
-  tokenizer<escaped_list_separator<char> > subjectInfoItems
-    (subjectInfo, escaped_list_separator<char>("\\", " \t", "'\""));
+  tokenizer<escaped_list_separator<char>> subjectInfoItems(subjectInfo,
+                                                           escaped_list_separator<char>("\\", " \t",
+                                                                                        "'\""));
 
-  tokenizer<escaped_list_separator<char> >::iterator it =
-    subjectInfoItems.begin();
+  tokenizer<escaped_list_separator<char>>::iterator it = subjectInfoItems.begin();
 
-  while (it != subjectInfoItems.end())
-    {
-      std::string oid = *it;
+  while (it != subjectInfoItems.end()) {
+    std::string oid = *it;
 
-      it++;
-      if (it == subjectInfoItems.end())
-        {
-          std::cerr << "ERROR: unmatched info for oid [" << oid << "]" << std::endl;
-          return 1;
-        }
-
-      std::string value = *it;
-
-      subjectDescription.push_back(v1::CertificateSubjectDescription(Oid(oid), value));
-
-      it++;
+    it++;
+    if (it == subjectInfoItems.end()) {
+      std::cerr << "ERROR: unmatched info for oid [" << oid << "]" << std::endl;
+      return 1;
     }
 
+    std::string value = *it;
+
+    subjectDescription.push_back(v1::CertificateSubjectDescription(Oid(oid), value));
+
+    it++;
+  }
+
   // new 'signedInfo' processing
-  for (std::vector<std::string>::const_iterator info = signedInfo.begin();
-       info != signedInfo.end(); ++info) {
+  for (std::vector<std::string>::const_iterator info = signedInfo.begin(); info != signedInfo.end();
+       ++info) {
     size_t pos = info->find(" ");
     if (pos == std::string::npos) {
       std::cerr << "ERROR: incorrectly formatted signed info block [" << *info << "]" << std::endl;
@@ -153,64 +145,53 @@ ndnsec_cert_gen(int argc, char** argv)
   system_clock::TimePoint notBefore;
   system_clock::TimePoint notAfter;
 
-  if (vm.count("not-before") == 0)
-    {
-      notBefore = system_clock::now();
-    }
-  else
-    {
-      notBefore = fromIsoString(notBeforeStr.substr(0, 8) + "T" +
-                                notBeforeStr.substr(8, 6));
-    }
+  if (vm.count("not-before") == 0) {
+    notBefore = system_clock::now();
+  }
+  else {
+    notBefore = fromIsoString(notBeforeStr.substr(0, 8) + "T" + notBeforeStr.substr(8, 6));
+  }
 
-  if (vm.count("not-after") == 0)
-    {
-      notAfter = notBefore + days(365);
-    }
-  else
-    {
-      notAfter = fromIsoString(notAfterStr.substr(0, 8) + "T" +
-                               notAfterStr.substr(8, 6));
+  if (vm.count("not-after") == 0) {
+    notAfter = notBefore + days(365);
+  }
+  else {
+    notAfter = fromIsoString(notAfterStr.substr(0, 8) + "T" + notAfterStr.substr(8, 6));
 
-      if (notAfter < notBefore)
-        {
-          std::cerr << "ERROR: not-before cannot be later than not-after" << std::endl
-                    << std::endl
-                    << description << std::endl;
-          return 1;
-        }
-    }
-
-  if (vm.count("request") == 0)
-    {
-      std::cerr << "ERROR: request file must be specified" << std::endl
+    if (notAfter < notBefore) {
+      std::cerr << "ERROR: not-before cannot be later than not-after" << std::endl
                 << std::endl
                 << description << std::endl;
       return 1;
     }
+  }
 
-  shared_ptr<v1::IdentityCertificate> selfSignedCertificate
-    = getIdentityCertificate(requestFile);
+  if (vm.count("request") == 0) {
+    std::cerr << "ERROR: request file must be specified" << std::endl
+              << std::endl
+              << description << std::endl;
+    return 1;
+  }
 
-  if (!static_cast<bool>(selfSignedCertificate))
-    {
-      std::cerr << "ERROR: input error" << std::endl;
-      return 1;
-    }
+  shared_ptr<v1::IdentityCertificate> selfSignedCertificate = getIdentityCertificate(requestFile);
+
+  if (!static_cast<bool>(selfSignedCertificate)) {
+    std::cerr << "ERROR: input error" << std::endl;
+    return 1;
+  }
 
   Name keyName = selfSignedCertificate->getPublicKeyName();
 
   shared_ptr<v1::IdentityCertificate> certificate =
     keyChain.prepareUnsignedIdentityCertificate(keyName, selfSignedCertificate->getPublicKeyInfo(),
-                                                signId, notBefore, notAfter,
-                                                subjectDescription, certPrefix);
+                                                signId, notBefore, notAfter, subjectDescription,
+                                                certPrefix);
 
-  if (!static_cast<bool>(certificate))
-    {
-      std::cerr << "ERROR: key name is not formated correctly or does not match certificate name"
-                << std::endl;
-      return 1;
-    }
+  if (!static_cast<bool>(certificate)) {
+    std::cerr << "ERROR: key name is not formated correctly or does not match certificate name"
+              << std::endl;
+    return 1;
+  }
 
   keyChain.createIdentity(signId);
   Name signingCertificateName = keyChain.getDefaultCertificateNameForIdentity(signId);
@@ -221,7 +202,8 @@ ndnsec_cert_gen(int argc, char** argv)
   Block wire = certificate->wireEncode();
 
   try {
-    transform::bufferSource(wire.wire(), wire.size()) >> transform::base64Encode(true) >> transform::streamSink(std::cout);
+    transform::bufferSource(wire.wire(), wire.size()) >> transform::base64Encode(true) >>
+      transform::streamSink(std::cout);
   }
   catch (const transform::Error& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
@@ -231,4 +213,6 @@ ndnsec_cert_gen(int argc, char** argv)
   return 0;
 }
 
-#endif // NDN_TOOLS_NDNSEC_CERT_GEN_HPP
+} // namespace tools
+} // namespace security
+} // namespace ndn
