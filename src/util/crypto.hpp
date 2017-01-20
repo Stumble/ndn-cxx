@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016 Regents of the University of California.
+ * Copyright (c) 2013-2017 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -41,19 +41,7 @@ static const size_t SHA256_DIGEST_SIZE = 32;
 ConstBufferPtr
 computeSha256Digest(const uint8_t* data, size_t dataLength);
 
-/**
- * @brief Compute the sha-256 digest of data.
- *
- * @deprecated Use computeSha256Digest function instead
- */
-inline ConstBufferPtr
-sha256(const uint8_t* data, size_t dataLength)
-{
-  return computeSha256Digest(data, dataLength);
-}
-
 } // namespace crypto
-
 } // namespace ndn
 
 #endif // NDN_UTIL_CRYPTO_HPP
