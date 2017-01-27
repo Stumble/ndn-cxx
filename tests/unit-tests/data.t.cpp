@@ -20,6 +20,8 @@
  */
 
 #include "data.hpp"
+#include "security/signature-sha256-with-rsa.hpp"
+#include "security/digest-sha256.hpp"
 #include "security/v1/cryptopp.hpp"
 #include "encoding/buffer-stream.hpp"
 

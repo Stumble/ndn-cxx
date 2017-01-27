@@ -28,17 +28,10 @@
 namespace ndn {
 namespace tests {
 
-class IdentityManagementV1TimeFixture : public UnitTestTimeFixture
-                                      , public IdentityManagementV1Fixture
+class IdentityManagementTimeFixture : public UnitTestTimeFixture
+                                    , public IdentityManagementFixture
 {
 };
-
-class IdentityManagementV2TimeFixture : public UnitTestTimeFixture
-                                      , public IdentityManagementV2Fixture
-{
-};
-
-using IdentityManagementTimeFixture = IdentityManagementV2TimeFixture;
 
 } // namespace tests
 } // namespace ndn

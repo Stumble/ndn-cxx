@@ -32,7 +32,7 @@ namespace tests {
 using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
-BOOST_FIXTURE_TEST_SUITE(TestCommandInterestSigner, IdentityManagementV2TimeFixture)
+BOOST_FIXTURE_TEST_SUITE(TestCommandInterestSigner, IdentityManagementTimeFixture)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
