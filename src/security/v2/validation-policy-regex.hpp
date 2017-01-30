@@ -17,56 +17,49 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
-#ifndef NDN_SECURITY_SEC_RULE_SPECIFIC_HPP
-#define NDN_SECURITY_SEC_RULE_SPECIFIC_HPP
+#ifndef NDN_SECURITY_V2_VALIDATION_POLICY_REGEX_HPP
+#define NDN_SECURITY_V2_VALIDATION_POLICY_REGEX_HPP
 
-#include "../common.hpp"
-#include "sec-rule.hpp"
-#include "../util/regex.hpp"
+#include "validator.hpp"
+#include "../sec-rule-relative.hpp"
+#include "../../util/regex.hpp"
 
 namespace ndn {
 namespace security {
+namespace v2 {
 
-class SecRuleSpecific : public SecRule
+class ValidationPolicyRegex : public ValidationPolicy
 {
 public:
-  SecRuleSpecific(shared_ptr<Regex> dataRegex, shared_ptr<Regex> signerRegex);
-
-  explicit
-  SecRuleSpecific(shared_ptr<Regex> dataRegex);
-
-  explicit
-  SecRuleSpecific(const SecRuleSpecific& rule);
-
-  bool
-  matchDataName(const Data& data) const override;
-
-  bool
-  matchSignerName(const Data& data) const override;
-
-  bool
-  satisfy(const Data& data) const override;
-
-  bool
-  satisfy(const Name& dataName, const Name& signerName) const override;
-
-  bool
-  isExempted() const
-  {
-    return m_isExempted;
-  }
+  /**
+   * @brief Add a rule for data verification.
+   *
+   * @param rule The verification rule
+   */
+  void
+  addDataVerificationRule(unique_ptr<SecRuleRelative> rule);
 
 private:
-  shared_ptr<Regex> m_dataRegex;
-  shared_ptr<Regex> m_signerRegex;
-  bool m_isExempted;
+  void
+  checkPolicy(const Data& data, const shared_ptr<ValidationState>& state,
+              const ValidationContinuation& continueValidation) override;
+
+  void
+  checkPolicy(const Interest& interest, const shared_ptr<ValidationState>& state,
+              const ValidationContinuation& continueValidation) override;
+
+private:
+  std::vector<unique_ptr<SecRuleRelative>> m_mustFailVerify;
+  std::vector<unique_ptr<SecRuleRelative>> m_verifyPolicies;
 };
 
+} // namespace v2
 } // namespace security
+
+using security::v2::ValidationPolicyRegex;
+
 } // namespace ndn
 
-#endif // NDN_SECURITY_SEC_RULE_SPECIFIC_HPP
+#endif // NDN_SECURITY_V2_VALIDATION_POLICY_REGEX_HPP

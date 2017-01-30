@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2014 Regents of the University of California.
+ * Copyright (c) 2013-2017 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -17,8 +17,6 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
 #ifndef NDN_SECURITY_SEC_RULE_HPP
@@ -28,18 +26,15 @@
 #include "../data.hpp"
 
 namespace ndn {
+namespace security {
 
-class SecRule
+class SecRule : noncopyable
 {
 public:
   class Error : public std::runtime_error
   {
   public:
-    explicit
-    Error(const std::string& what)
-      : std::runtime_error(what)
-    {
-    }
+    using std::runtime_error::runtime_error;
   };
 
   explicit
@@ -49,35 +44,31 @@ public:
   }
 
   virtual
-  ~SecRule()
+  ~SecRule() = default;
+
+  virtual bool
+  matchDataName(const Data& data) const = 0;
+
+  virtual bool
+  matchSignerName(const Data& data) const = 0;
+
+  virtual bool
+  satisfy(const Data& data) const = 0;
+
+  virtual bool
+  satisfy(const Name& dataName, const Name& signerName) const = 0;
+
+  bool
+  isPositive() const
   {
+    return m_isPositive;
   }
-
-  virtual bool
-  matchDataName(const Data& data) = 0;
-
-  virtual bool
-  matchSignerName(const Data& data) = 0;
-
-  virtual bool
-  satisfy(const Data& data) = 0;
-
-  virtual bool
-  satisfy(const Name& dataName, const Name& signerName) = 0;
-
-  inline bool
-  isPositive();
 
 protected:
   bool m_isPositive;
 };
 
-bool
-SecRule::isPositive()
-{
-  return m_isPositive;
-}
-
+} // namespace security
 } // namespace ndn
 
-#endif //NDN_SECURITY_SEC_RULE_HPP
+#endif // NDN_SECURITY_SEC_RULE_HPP

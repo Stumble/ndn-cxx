@@ -20,6 +20,9 @@
  */
 
 #include "security/sec-rule-relative.hpp"
+#include "security/signing-helpers.hpp"
+
+#include "boost-test.hpp"
 #include "identity-management-fixture.hpp"
 
 namespace ndn {
@@ -29,7 +32,7 @@ namespace tests {
 using namespace ndn::tests;
 
 BOOST_AUTO_TEST_SUITE(Security)
-BOOST_FIXTURE_TEST_SUITE(TestSecRuleRelative, IdentityManagementV1Fixture)
+BOOST_FIXTURE_TEST_SUITE(TestSecRuleRelative, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
@@ -40,25 +43,21 @@ BOOST_AUTO_TEST_CASE(Basic)
 
   Name dataName("SecurityTestSecRule/Basic");
   Data rsaData(dataName);
-  m_keyChain.sign(rsaData,
-                  security::SigningInfo(security::SigningInfo::SIGNER_TYPE_ID,
-                                        rsaIdentity));
+  m_keyChain.sign(rsaData, signingByIdentity(rsaIdentity));
   Data ecData(dataName);
-  m_keyChain.sign(ecData,
-                  security::SigningInfo(security::SigningInfo::SIGNER_TYPE_ID,
-                                        ecIdentity));
+  m_keyChain.sign(ecData, signingByIdentity(ecIdentity));
   Data sha256Data(dataName);
-  m_keyChain.sign(sha256Data, security::SigningInfo(security::SigningInfo::SIGNER_TYPE_SHA256));
+  m_keyChain.sign(sha256Data, signingWithSha256());
 
   SecRuleRelative rule("^(<SecurityTestSecRule><Basic>)$",
-                       "^(<SecurityTestSecRule><Basic>)<><KEY><><>$",
+                       "^(<SecurityTestSecRule><Basic>)<><KEY><>$",
                        "==", "\\1", "\\1", true);
-  BOOST_CHECK(rule.satisfy(rsaData));
-  BOOST_CHECK(rule.satisfy(ecData));
+  BOOST_CHECK_EQUAL(rule.satisfy(rsaData), true);
+  BOOST_CHECK_EQUAL(rule.satisfy(ecData), true);
   BOOST_CHECK_EQUAL(rule.satisfy(sha256Data), false);
 
-  BOOST_CHECK(rule.matchSignerName(rsaData));
-  BOOST_CHECK(rule.matchSignerName(ecData));
+  BOOST_CHECK_EQUAL(rule.matchSignerName(rsaData), true);
+  BOOST_CHECK_EQUAL(rule.matchSignerName(ecData), true);
   BOOST_CHECK_EQUAL(rule.matchSignerName(sha256Data), false);
 }
 

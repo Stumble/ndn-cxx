@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2014 Regents of the University of California.
+ * Copyright (c) 2013-2017 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -17,8 +17,6 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
 #ifndef NDN_SECURITY_SEC_RULE_RELATIVE_HPP
@@ -28,6 +26,7 @@
 #include "../util/regex.hpp"
 
 namespace ndn {
+namespace security {
 
 class SecRuleRelative : public SecRule
 {
@@ -35,11 +34,7 @@ public:
   class Error : public SecRule::Error
   {
   public:
-    explicit
-    Error(const std::string& what)
-      : SecRule::Error(what)
-    {
-    }
+    using SecRule::Error::Error;
   };
 
   SecRuleRelative(const std::string& dataRegex, const std::string& signerRegex,
@@ -47,24 +42,21 @@ public:
                   const std::string& dataExpand, const std::string& signerExpand,
                   bool isPositive);
 
-  virtual
-  ~SecRuleRelative();
+  bool
+  matchDataName(const Data& data) const override;
 
-  virtual bool
-  matchDataName(const Data& data);
+  bool
+  matchSignerName(const Data& data) const override;
 
-  virtual bool
-  matchSignerName(const Data& data);
+  bool
+  satisfy(const Data& data) const override;
 
-  virtual bool
-  satisfy(const Data& data);
-
-  virtual bool
-  satisfy(const Name& dataName, const Name& signerName);
+  bool
+  satisfy(const Name& dataName, const Name& signerName) const override;
 
 private:
   bool
-  compare(const Name& dataName, const Name& signerName);
+  compare(const Name& dataName, const Name& signerName) const;
 
 private:
   const std::string m_dataRegex;
@@ -73,10 +65,14 @@ private:
   const std::string m_dataExpand;
   const std::string m_signerExpand;
 
-  Regex m_dataNameRegex;
-  Regex m_signerNameRegex;
+  mutable Regex m_dataNameRegex;
+  mutable Regex m_signerNameRegex;
+
+  friend std::ostream&
+  operator<<(std::ostream& os, const SecRuleRelative& rule);
 };
 
+} // namespace security
 } // namespace ndn
 
-#endif //NDN_SECURITY_SEC_RULE_RELATIVE_HPP
+#endif // NDN_SECURITY_SEC_RULE_RELATIVE_HPP

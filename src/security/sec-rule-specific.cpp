@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2014 Regents of the University of California.
+ * Copyright (c) 2013-2017 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,9 +27,9 @@
 #include "signature-sha256-with-rsa.hpp"
 
 namespace ndn {
+namespace security {
 
-SecRuleSpecific::SecRuleSpecific(shared_ptr<Regex> dataRegex,
-                                 shared_ptr<Regex> signerRegex)
+SecRuleSpecific::SecRuleSpecific(shared_ptr<Regex> dataRegex, shared_ptr<Regex> signerRegex)
   : SecRule(true)
   , m_dataRegex(dataRegex)
   , m_signerRegex(signerRegex)
@@ -53,50 +53,48 @@ SecRuleSpecific::SecRuleSpecific(const SecRuleSpecific& rule)
 }
 
 bool
-SecRuleSpecific::matchDataName(const Data& data)
+SecRuleSpecific::matchDataName(const Data& data) const
 {
   return m_dataRegex->match(data.getName());
 }
 
 bool
-SecRuleSpecific::matchSignerName(const Data& data)
+SecRuleSpecific::matchSignerName(const Data& data) const
 {
   if (m_isExempted)
     return true;
 
-  try
-    {
-      if (!data.getSignature().hasKeyLocator())
-        return false;
-
-      const KeyLocator& keyLocator = data.getSignature().getKeyLocator();
-      if (keyLocator.getType() != KeyLocator::KeyLocator_Name)
-        return false;
-
-      const Name& signerName = keyLocator.getName();
-      return m_signerRegex->match(signerName);
-    }
-  catch (tlv::Error& e)
-    {
+  try {
+    if (!data.getSignature().hasKeyLocator())
       return false;
-    }
-  catch (RegexMatcher::Error& e)
-    {
+
+    const KeyLocator& keyLocator = data.getSignature().getKeyLocator();
+    if (keyLocator.getType() != KeyLocator::KeyLocator_Name)
       return false;
-    }
+
+    const Name& signerName = keyLocator.getName();
+    return m_signerRegex->match(signerName);
+  }
+  catch (tlv::Error& e) {
+    return false;
+  }
+  catch (RegexMatcher::Error& e) {
+    return false;
+  }
 }
 
 bool
-SecRuleSpecific::satisfy(const Data& data)
+SecRuleSpecific::satisfy(const Data& data) const
 {
   return (matchDataName(data) && matchSignerName(data)) ? true : false;
 }
 
 bool
-SecRuleSpecific::satisfy(const Name& dataName, const Name& signerName)
+SecRuleSpecific::satisfy(const Name& dataName, const Name& signerName) const
 {
   bool isSignerMatched = m_isExempted || m_signerRegex->match(signerName);
   return m_dataRegex->match(dataName) && isSignerMatched;
 }
 
+} // namespace security
 } // namespace ndn

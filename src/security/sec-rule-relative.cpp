@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2015 Regents of the University of California.
+ * Copyright (c) 2013-2017 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -17,24 +17,23 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
-
-#include "common.hpp"
 
 #include "sec-rule-relative.hpp"
 
 #include "signature-sha256-with-rsa.hpp"
 #include "security-common.hpp"
 
+#include "util/logger.hpp"
+
 namespace ndn {
+namespace security {
 
-using std::string;
+NDN_LOG_INIT(ndn.security.SecRuleRelative);
 
-SecRuleRelative::SecRuleRelative(const string& dataRegex, const string& signerRegex,
-                                 const string& op,
-                                 const string& dataExpand, const string& signerExpand,
+SecRuleRelative::SecRuleRelative(const std::string& dataRegex, const std::string& signerRegex,
+                                 const std::string& op,
+                                 const std::string& dataExpand, const std::string& signerExpand,
                                  bool isPositive)
   : SecRule(isPositive),
     m_dataRegex(dataRegex),
@@ -45,108 +44,102 @@ SecRuleRelative::SecRuleRelative(const string& dataRegex, const string& signerRe
     m_dataNameRegex(dataRegex, dataExpand),
     m_signerNameRegex(signerRegex, signerExpand)
 {
-  if (op != ">" && op != ">=" && op != "==")
-    BOOST_THROW_EXCEPTION(Error("op is wrong"));
-}
-
-SecRuleRelative::~SecRuleRelative()
-{
+  if (op != ">" && op != ">=" && op != "==") {
+    BOOST_THROW_EXCEPTION(Error("Unrecognized operator `" + op + "`"));
+  }
 }
 
 bool
-SecRuleRelative::satisfy(const Data& data)
+SecRuleRelative::satisfy(const Data& data) const
 {
   Name dataName = data.getName();
-  try
-    {
-      if (!data.getSignature().hasKeyLocator())
-        return false;
-
-      const KeyLocator& keyLocator = data.getSignature().getKeyLocator();
-      if (keyLocator.getType() != KeyLocator::KeyLocator_Name)
-        return false;
-
-      const Name& signerName = keyLocator.getName();
-      return satisfy(dataName, signerName);
-    }
-  catch (tlv::Error& e)
-    {
+  try {
+    if (!data.getSignature().hasKeyLocator())
       return false;
-    }
-  catch (RegexMatcher::Error& e)
-    {
+
+    const KeyLocator& keyLocator = data.getSignature().getKeyLocator();
+    if (keyLocator.getType() != KeyLocator::KeyLocator_Name)
       return false;
-    }
+
+    const Name& signerName = keyLocator.getName();
+    return satisfy(dataName, signerName);
+  }
+  catch (const tlv::Error& e) {
+    NDN_LOG_TRACE("TLV Error: " << e.what());
+    return false;
+  }
+  catch (const RegexMatcher::Error& e) {
+    NDN_LOG_TRACE("RegexMatcher Error: " << e.what());
+    return false;
+  }
 }
 
 bool
-SecRuleRelative::satisfy(const Name& dataName, const Name& signerName)
+SecRuleRelative::satisfy(const Name& dataName, const Name& signerName) const
 {
-  if (!m_dataNameRegex.match(dataName))
+  if (!m_dataNameRegex.match(dataName) || !m_signerNameRegex.match(signerName)) {
     return false;
-  Name expandDataName = m_dataNameRegex.expand();
+  }
+  NDN_LOG_TRACE("Matched data and signer name for " << dataName << " (signed by " << signerName << ")");
 
-  if (!m_signerNameRegex.match(signerName))
-    return false;
-  Name expandSignerName =  m_signerNameRegex.expand();
-
-  bool matched = compare(expandDataName, expandSignerName);
-
-  return matched;
+  return compare(m_dataNameRegex.expand(), m_signerNameRegex.expand());
 }
 
 bool
-SecRuleRelative::matchDataName(const Data& data)
+SecRuleRelative::matchDataName(const Data& data) const
 {
   return m_dataNameRegex.match(data.getName());
 }
 
 bool
-SecRuleRelative::matchSignerName(const Data& data)
+SecRuleRelative::matchSignerName(const Data& data) const
 {
-  try
-    {
-      if (!data.getSignature().hasKeyLocator())
-        return false;
-
-      const KeyLocator& keyLocator = data.getSignature().getKeyLocator();
-      if (keyLocator.getType() != KeyLocator::KeyLocator_Name)
-        return false;
-
-      const Name& signerName = keyLocator.getName();
-      return m_signerNameRegex.match(signerName);
-    }
-  catch (tlv::Error& e)
-    {
+  try {
+    if (!data.getSignature().hasKeyLocator())
       return false;
-    }
-  catch (RegexMatcher::Error& e)
-    {
+
+    const KeyLocator& keyLocator = data.getSignature().getKeyLocator();
+    if (keyLocator.getType() != KeyLocator::KeyLocator_Name)
       return false;
-    }
+
+    const Name& signerName = keyLocator.getName();
+    return m_signerNameRegex.match(signerName);
+  }
+  catch (const tlv::Error& e) {
+    return false;
+  }
+  catch (const RegexMatcher::Error& e) {
+    return false;
+  }
 }
 
 bool
-SecRuleRelative::compare(const Name& dataName, const Name& signerName)
+SecRuleRelative::compare(const Name& dataName, const Name& signerName) const
 {
-  if ((dataName == signerName) && ("==" == m_op || ">=" == m_op))
-    return true;
+  NDN_LOG_TRACE("Comparing " << dataName << " " << m_op << " " << signerName);
 
-  Name::const_iterator i = dataName.begin();
-  Name::const_iterator j = signerName.begin();
-
-  for (; i != dataName.end() && j != signerName.end(); i++, j++)
-    {
-      if (i->compare(*j) == 0)
-        continue;
-      else
-        return false;
-    }
-
-  if (i == dataName.end())
+  if (m_op == "==") {
+    return dataName == signerName;
+  }
+  else if (m_op == ">=") {
+    return signerName.isPrefixOf(dataName);
+  }
+  else if (m_op == ">") {
+    return dataName.size() > signerName.size() && signerName.isPrefixOf(dataName);
+  }
+  else {
     return false;
-  else
-    return true;
+  }
 }
 
+std::ostream&
+operator<<(std::ostream& os, const SecRuleRelative& rule)
+{
+  return os << (rule.isPositive() ? "+ " : "- ")
+            << rule.m_dataRegex << " (" << rule.m_dataExpand << ")"
+            << " " << rule.m_op << " "
+            << rule.m_signerRegex << " (" << rule.m_signerExpand << ")";
+}
+
+} // namespace security
 } // namespace ndn
