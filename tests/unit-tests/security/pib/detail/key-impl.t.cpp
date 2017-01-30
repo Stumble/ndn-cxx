@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(Errors)
 
   BOOST_CHECK_THROW(KeyImpl(id1Key1Name, pibImpl), Pib::Error);
   KeyImpl key11(id1Key1Name, id1Key1.buf(), id1Key1.size(), pibImpl);
-  BOOST_CHECK_THROW(KeyImpl(id1Key1Name, id1Key1.buf(), id1Key1.size(), pibImpl), Pib::Error);
+  KeyImpl(id1Key1Name, id1Key1.buf(), id1Key1.size(), pibImpl); // overwriting of the key should work
 
   BOOST_CHECK_THROW(KeyImpl(Name("/wrong"), pibImpl), std::invalid_argument);
   BOOST_CHECK_THROW(KeyImpl(Name("/wrong"), id1Key1.buf(), id1Key1.size(), pibImpl), std::invalid_argument);
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(Errors)
   BOOST_CHECK_THROW(KeyImpl(id1Key2Name, wrongKey.buf(), wrongKey.size(), pibImpl), std::invalid_argument);
 
   key11.addCertificate(id1Key1Cert1);
-  BOOST_CHECK_THROW(key11.addCertificate(id1Key1Cert1), Pib::Error);
+  key11.addCertificate(id1Key1Cert1); // overwriting of the cert should work
   BOOST_CHECK_THROW(key11.addCertificate(id1Key2Cert1), std::invalid_argument);
   BOOST_CHECK_THROW(key11.removeCertificate(id1Key2Cert1.getName()), std::invalid_argument);
   BOOST_CHECK_THROW(key11.getCertificate(id1Key2Cert1.getName()), std::invalid_argument);
