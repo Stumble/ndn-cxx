@@ -41,6 +41,7 @@ Validator::Validator(unique_ptr<ValidationPolicy> policy, unique_ptr<Certificate
 {
   BOOST_ASSERT(m_policy != nullptr);
   BOOST_ASSERT(m_certFetcher != nullptr);
+  m_policy->setValidator(*this);
   m_certFetcher->setCertificateStorage(*this);
 }
 

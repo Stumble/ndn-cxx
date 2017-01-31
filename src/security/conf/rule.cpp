@@ -19,60 +19,62 @@
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-#ifndef NDN_SECURITY_CONF_RULE_HPP
-#define NDN_SECURITY_CONF_RULE_HPP
-
-#include "filter.hpp"
-#include "checker.hpp"
+#include "rule.hpp"
 
 namespace ndn {
 namespace security {
 namespace conf {
 
-class Rule : noncopyable
+Rule::Rule(const std::string& id)
+  : m_id(id)
 {
-public:
-  explicit
-  Rule(const std::string& id);
+}
 
-  virtual
-  ~Rule() = default;
+void
+Rule::addFilter(const shared_ptr<Filter>& filter)
+{
+  m_filters.push_back(filter);
+}
 
-  const std::string&
-  getId()
-  {
-    return m_id;
+void
+Rule::addChecker(const shared_ptr<Checker>& checker)
+{
+  m_checkers.push_back(checker);
+}
+
+template<class Packet>
+bool
+Rule::match(const Packet& packet) const
+{
+  if (m_filters.empty()) {
+    return true;
   }
 
-  void
-  addFilter(const shared_ptr<Filter>& filter);
+  for (const auto& filter : m_filters) {
+    if (!filter->match(packet)) {
+      return false;
+    }
+  }
 
-  void
-  addChecker(const shared_ptr<Checker>& checker);
+  return true;
+}
 
-  template<class Packet>
-  bool
-  match(const Packet& packet) const;
+template<class Packet>
+bool
+Rule::check(const Packet& packet) const
+{
+  bool hasPendingResult = false;
+  for (const auto& checker : m_checkers) {
+    bool result = checker->check(packet);
+    if (!result) {
+      return result;
+    }
+    hasPendingResult = true;
+  }
 
-  /**
-   * @brief check if packet satisfies rule's condition
-   *
-   * @param packet The packet
-   * @return false packet violates the rule
-   *         true  packet satisfies the rule, further validation is needed
-   */
-  template<class Packet>
-  bool
-  check(const Packet& packet) const;
-
-NDN_CXX_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::string m_id;
-  std::vector<shared_ptr<Filter>> m_filters;
-  std::vector<shared_ptr<Checker>> m_checkers;
-};
+  return hasPendingResult;
+}
 
 } // namespace conf
 } // namespace security
 } // namespace ndn
-
-#endif // NDN_SECURITY_CONF_RULE_HPP

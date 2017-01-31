@@ -17,21 +17,15 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
  */
 
 #ifndef NDN_SECURITY_CONF_FILTER_HPP
 #define NDN_SECURITY_CONF_FILTER_HPP
 
-#include "../../common.hpp"
-#include "../../data.hpp"
-#include "../../interest.hpp"
-#include "../../util/regex.hpp"
-#include "../security-common.hpp"
-#include <boost/algorithm/string.hpp>
-
 #include "common.hpp"
+#include "../../interest.hpp"
+#include "../../data.hpp"
+#include "../../util/regex.hpp"
 
 namespace ndn {
 namespace security {
@@ -44,31 +38,17 @@ namespace conf {
  * The Filter class is a part of a rule and is used to match packet.
  * Matched packets will be checked against the checkers defined in the rule.
  */
-
-class Filter
+class Filter : noncopyable
 {
 public:
-
   virtual
-  ~Filter()
-  {
-  }
+  ~Filter() = default;
 
   bool
-  match(const Data& data)
-  {
-    return matchName(data.getName());
-  }
+  match(const Data& data);
 
   bool
-  match(const Interest& interest)
-  {
-    if (interest.getName().size() < command_interest::MIN_SIZE)
-      return false;
-
-    Name unsignedName = interest.getName().getPrefix(-command_interest::MIN_SIZE);
-    return matchName(unsignedName);
-  }
+  match(const Interest& interest);
 
 protected:
   virtual bool
@@ -79,39 +59,17 @@ class RelationNameFilter : public Filter
 {
 public:
   enum Relation
-    {
-      RELATION_EQUAL,
-      RELATION_IS_PREFIX_OF,
-      RELATION_IS_STRICT_PREFIX_OF
-    };
-
-  RelationNameFilter(const Name& name, Relation relation)
-    : m_name(name)
-    , m_relation(relation)
   {
-  }
+    RELATION_EQUAL,
+    RELATION_IS_PREFIX_OF,
+    RELATION_IS_STRICT_PREFIX_OF
+  };
 
-  virtual
-  ~RelationNameFilter()
-  {
-  }
+  RelationNameFilter(const Name& name, Relation relation);
 
 protected:
-  virtual bool
-  matchName(const Name& name)
-  {
-    switch (m_relation)
-      {
-      case RELATION_EQUAL:
-        return (name == m_name);
-      case RELATION_IS_PREFIX_OF:
-        return m_name.isPrefixOf(name);
-      case RELATION_IS_STRICT_PREFIX_OF:
-        return (m_name.isPrefixOf(name) && m_name.size() < name.size());
-      default:
-        return false;
-      }
-  }
+  bool
+  matchName(const Name& name) override;
 
 private:
   Name m_name;
@@ -122,22 +80,11 @@ class RegexNameFilter : public Filter
 {
 public:
   explicit
-  RegexNameFilter(const Regex& regex)
-    : m_regex(regex)
-  {
-  }
-
-  virtual
-  ~RegexNameFilter()
-  {
-  }
+  RegexNameFilter(const Regex& regex);
 
 protected:
-  virtual bool
-  matchName(const Name& name)
-  {
-    return m_regex.match(name);
-  }
+  bool
+  matchName(const Name& name) override;
 
 private:
   Regex m_regex;
@@ -147,88 +94,11 @@ class FilterFactory
 {
 public:
   static shared_ptr<Filter>
-  create(const ConfigSection& configSection)
-  {
-    ConfigSection::const_iterator propertyIt = configSection.begin();
+  create(const ConfigSection& configSection);
 
-    if (propertyIt == configSection.end() || !boost::iequals(propertyIt->first, "type"))
-      BOOST_THROW_EXCEPTION(Error("Expect <filter.type>!"));
-
-    std::string type = propertyIt->second.data();
-
-    if (boost::iequals(type, "name"))
-      return createNameFilter(configSection);
-    else
-      BOOST_THROW_EXCEPTION(Error("Unsupported filter.type: " + type));
-  }
 private:
   static shared_ptr<Filter>
-  createNameFilter(const ConfigSection& configSection)
-  {
-    ConfigSection::const_iterator propertyIt = configSection.begin();
-    propertyIt++;
-
-    if (propertyIt == configSection.end())
-      BOOST_THROW_EXCEPTION(Error("Expect more properties for filter(name)"));
-
-    if (boost::iequals(propertyIt->first, "name"))
-      {
-        // Get filter.name
-        Name name;
-        try
-          {
-            name = Name(propertyIt->second.data());
-          }
-        catch (Name::Error& e)
-          {
-            BOOST_THROW_EXCEPTION(Error("Wrong filter.name: " + propertyIt->second.data()));
-          }
-
-        propertyIt++;
-
-        // Get filter.relation
-        if (propertyIt == configSection.end() || !boost::iequals(propertyIt->first, "relation"))
-          BOOST_THROW_EXCEPTION(Error("Expect <filter.relation>!"));
-
-        std::string relationString = propertyIt->second.data();
-        propertyIt++;
-
-        RelationNameFilter::Relation relation;
-        if (boost::iequals(relationString, "equal"))
-          relation = RelationNameFilter::RELATION_EQUAL;
-        else if (boost::iequals(relationString, "is-prefix-of"))
-          relation = RelationNameFilter::RELATION_IS_PREFIX_OF;
-        else if (boost::iequals(relationString, "is-strict-prefix-of"))
-          relation = RelationNameFilter::RELATION_IS_STRICT_PREFIX_OF;
-        else
-          BOOST_THROW_EXCEPTION(Error("Unsupported relation: " + relationString));
-
-
-        if (propertyIt != configSection.end())
-          BOOST_THROW_EXCEPTION(Error("Expect the end of filter!"));
-
-        return make_shared<RelationNameFilter>(name, relation);
-      }
-    else if (boost::iequals(propertyIt->first, "regex"))
-      {
-        std::string regexString = propertyIt->second.data();
-        propertyIt++;
-
-        if (propertyIt != configSection.end())
-          BOOST_THROW_EXCEPTION(Error("Expect the end of filter!"));
-
-        try
-          {
-            return shared_ptr<RegexNameFilter>(new RegexNameFilter(regexString));
-          }
-        catch (Regex::Error& e)
-          {
-            BOOST_THROW_EXCEPTION(Error("Wrong filter.regex: " + regexString));
-          }
-      }
-    else
-      BOOST_THROW_EXCEPTION(Error("Wrong filter(name) properties"));
-  }
+  createNameFilter(const ConfigSection& configSection);
 };
 
 } // namespace conf

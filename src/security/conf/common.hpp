@@ -25,7 +25,6 @@
 #define NDN_SECURITY_CONF_COMMON_HPP
 
 #include "../../common.hpp"
-#include <string>
 #include <boost/property_tree/ptree.hpp>
 
 namespace ndn {
@@ -37,11 +36,7 @@ typedef boost::property_tree::ptree ConfigSection;
 class Error : public std::runtime_error
 {
 public:
-  explicit
-  Error(const std::string& what)
-    : std::runtime_error(what)
-  {
-  }
+  using std::runtime_error::runtime_error;
 };
 
 } // namespace conf

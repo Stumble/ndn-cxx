@@ -358,76 +358,76 @@ BOOST_AUTO_TEST_CASE(HierarchicalCheckerTest1)
   BOOST_CHECK_EQUAL(result, -1);
 }
 
-BOOST_AUTO_TEST_CASE(FixedSignerCheckerTest1)
-{
-  using security::conf::FixedSignerChecker;
+// BOOST_AUTO_TEST_CASE(FixedSignerCheckerTest1)
+// {
+//   using security::conf::FixedSignerChecker;
 
-  Name identity("/SecurityTestConfChecker/FixedSignerCheckerTest1");
-  addIdentity(identity, EcKeyParams());
-  Name certName = m_keyChain.getDefaultCertificateNameForIdentity(identity);
-  shared_ptr<v1::IdentityCertificate> cert1 = m_keyChain.getCertificate(certName);
+//   Name identity("/SecurityTestConfChecker/FixedSignerCheckerTest1");
+//   addIdentity(identity, EcKeyParams());
+//   Name certName = m_keyChain.getDefaultCertificateNameForIdentity(identity);
+//   shared_ptr<v1::IdentityCertificate> cert1 = m_keyChain.getCertificate(certName);
 
-  Name identity2("/SecurityTestConfChecker/FixedSignerCheckerTest1Wrong");
-  addIdentity(identity2, RsaKeyParams());
-  Name certName2 = m_keyChain.getDefaultCertificateNameForIdentity(identity2);
-  shared_ptr<v1::IdentityCertificate> cert2 = m_keyChain.getCertificate(certName2);
+//   Name identity2("/SecurityTestConfChecker/FixedSignerCheckerTest1Wrong");
+//   addIdentity(identity2, RsaKeyParams());
+//   Name certName2 = m_keyChain.getDefaultCertificateNameForIdentity(identity2);
+//   shared_ptr<v1::IdentityCertificate> cert2 = m_keyChain.getCertificate(certName2);
 
-  Name packetName("/Test/Data");
+//   Name packetName("/Test/Data");
 
-  shared_ptr<Data> data1 = make_shared<Data>(packetName);
-  m_keyChain.sign(*data1,
-                  security::SigningInfo(security::SigningInfo::SIGNER_TYPE_ID,
-                                        identity));
+//   shared_ptr<Data> data1 = make_shared<Data>(packetName);
+//   m_keyChain.sign(*data1,
+//                   security::SigningInfo(security::SigningInfo::SIGNER_TYPE_ID,
+//                                         identity));
 
-  shared_ptr<Data> data2 = make_shared<Data>(packetName);
-  m_keyChain.sign(*data2,
-                  security::SigningInfo(security::SigningInfo::SIGNER_TYPE_ID,
-                                        identity2));
+//   shared_ptr<Data> data2 = make_shared<Data>(packetName);
+//   m_keyChain.sign(*data2,
+//                   security::SigningInfo(security::SigningInfo::SIGNER_TYPE_ID,
+//                                         identity2));
 
-  std::vector<shared_ptr<v1::IdentityCertificate> > certSet1;
-  certSet1.push_back(cert1);
+//   std::vector<shared_ptr<v1::IdentityCertificate> > certSet1;
+//   certSet1.push_back(cert1);
 
-  std::vector<shared_ptr<v1::IdentityCertificate> > certSet2;
-  certSet2.push_back(cert2);
-
-
-  int8_t result = 0;
-
-  FixedSignerChecker checker1(tlv::SignatureSha256WithEcdsa, certSet1);
-
-  result = checker1.check(*data1);
-  BOOST_CHECK_EQUAL(result, 1);
-
-  result = checker1.check(*data2);
-  BOOST_CHECK_EQUAL(result, -1);
+//   std::vector<shared_ptr<v1::IdentityCertificate> > certSet2;
+//   certSet2.push_back(cert2);
 
 
-  FixedSignerChecker checker2(tlv::SignatureSha256WithRsa, certSet1);
+//   int8_t result = 0;
 
-  result = checker2.check(*data1);
-  BOOST_CHECK_EQUAL(result, -1);
+//   FixedSignerChecker checker1(tlv::SignatureSha256WithEcdsa, certSet1);
 
-  result = checker2.check(*data2);
-  BOOST_CHECK_EQUAL(result, -1);
+//   result = checker1.check(*data1);
+//   BOOST_CHECK_EQUAL(result, 1);
 
-
-  FixedSignerChecker checker3(tlv::SignatureSha256WithEcdsa, certSet2);
-
-  result = checker3.check(*data1);
-  BOOST_CHECK_EQUAL(result, -1);
-
-  result = checker3.check(*data2);
-  BOOST_CHECK_EQUAL(result, -1);
+//   result = checker1.check(*data2);
+//   BOOST_CHECK_EQUAL(result, -1);
 
 
-  FixedSignerChecker checker4(tlv::SignatureSha256WithRsa, certSet2);
+//   FixedSignerChecker checker2(tlv::SignatureSha256WithRsa, certSet1);
 
-  result = checker4.check(*data1);
-  BOOST_CHECK_EQUAL(result, -1);
+//   result = checker2.check(*data1);
+//   BOOST_CHECK_EQUAL(result, -1);
 
-  result = checker4.check(*data2);
-  BOOST_CHECK_EQUAL(result, 1);
-}
+//   result = checker2.check(*data2);
+//   BOOST_CHECK_EQUAL(result, -1);
+
+
+//   FixedSignerChecker checker3(tlv::SignatureSha256WithEcdsa, certSet2);
+
+//   result = checker3.check(*data1);
+//   BOOST_CHECK_EQUAL(result, -1);
+
+//   result = checker3.check(*data2);
+//   BOOST_CHECK_EQUAL(result, -1);
+
+
+//   FixedSignerChecker checker4(tlv::SignatureSha256WithRsa, certSet2);
+
+//   result = checker4.check(*data1);
+//   BOOST_CHECK_EQUAL(result, -1);
+
+//   result = checker4.check(*data2);
+//   BOOST_CHECK_EQUAL(result, 1);
+// }
 
 BOOST_AUTO_TEST_SUITE_END() // TestChecker
 BOOST_AUTO_TEST_SUITE_END() // Conf

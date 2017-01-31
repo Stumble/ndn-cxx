@@ -40,8 +40,22 @@ public:
   using ValidationContinuation = std::function<void(const shared_ptr<CertificateRequest>& certRequest,
                                                     const shared_ptr<ValidationState>& state)>;
 
+  ValidationPolicy()
+    : m_validator(nullptr)
+  {
+  }
+
   virtual
   ~ValidationPolicy() = default;
+
+  /**
+   * @brief Set validator to which the policy is associated
+   */
+  void
+  setValidator(Validator& validator)
+  {
+    m_validator = &validator;
+  }
 
   /**
    * @brief Check @p data against the policy
@@ -101,6 +115,9 @@ public:
   {
     checkPolicy(static_cast<const Data&>(certificate), state, continueValidation);
   }
+
+protected:
+  Validator* m_validator;
 };
 
 } // namespace v2
