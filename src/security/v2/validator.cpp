@@ -46,6 +46,18 @@ Validator::Validator(unique_ptr<ValidationPolicy> policy, unique_ptr<Certificate
 
 Validator::~Validator() = default;
 
+ValidationPolicy&
+Validator::getPolicy()
+{
+  return *m_policy;
+}
+
+CertificateFetcher&
+Validator::getFetcher()
+{
+  return *m_certFetcher;
+}
+
 void
 Validator::setMaxDepth(size_t depth)
 {

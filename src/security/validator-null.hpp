@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016 Regents of the University of California.
+ * Copyright (c) 2013-2017 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -17,53 +17,37 @@
  * <http://www.gnu.org/licenses/>.
  *
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
- *
- * @author Yingdi Yu <http://irl.cs.ucla.edu/~yingdi/>
- * @author Jeff Thompson <jefft0@remap.ucla.edu>
  */
 
 #ifndef NDN_SECURITY_VALIDATOR_NULL_HPP
 #define NDN_SECURITY_VALIDATOR_NULL_HPP
 
-#include "validator.hpp"
+#include "v2/validator.hpp"
+#include "v2/validation-policy-accept-all.hpp"
+#include "v2/certificate-fetcher-offline.hpp"
 
 namespace ndn {
 namespace security {
+namespace v2 {
 
+/**
+ * @brief Validator with "accept-all" policy and offline certificate fetcher
+ */
 class ValidatorNull : public Validator
 {
 public:
-  virtual
-  ~ValidatorNull()
+  ValidatorNull()
+    : Validator(make_unique<ValidationPolicyAcceptAll>(), make_unique<CertificateFetcherOffline>())
   {
-  }
-
-protected:
-  virtual void
-  checkPolicy(const Data& data,
-              int nSteps,
-              const OnDataValidated& onValidated,
-              const OnDataValidationFailed& onValidationFailed,
-              std::vector<shared_ptr<ValidationRequest> >& nextSteps)
-  {
-    onValidated(data.shared_from_this());
-  }
-
-  virtual void
-  checkPolicy(const Interest& interest,
-              int nSteps,
-              const OnInterestValidated& onValidated,
-              const OnInterestValidationFailed& onValidationFailed,
-              std::vector<shared_ptr<ValidationRequest> >& nextSteps)
-  {
-    onValidated(interest.shared_from_this());
   }
 };
 
+} // namespace v2
+
+using v2::ValidatorNull;
+
 } // namespace security
-
-using security::ValidatorNull;
-
 } // namespace ndn
 
-#endif //NDN_SECURITY_VALIDATOR_NULL_HPP
+
+#endif // NDN_SECURITY_VALIDATOR_NULL_HPP

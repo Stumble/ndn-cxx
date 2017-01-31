@@ -26,15 +26,12 @@
 #include "control-response.hpp"
 #include "status-dataset.hpp"
 #include "command-options.hpp"
-#include "../../security/validator-null.hpp"
-#include "../../security/key-chain.hpp"
 #include "../../security/command-interest-signer.hpp"
+#include "../../security/v2/key-chain.hpp"
+#include "../../security/v2/validator.hpp"
 
 namespace ndn {
 
-namespace security {
-class Validator;
-} // namespace security
 class Face;
 
 namespace nfd {
@@ -67,7 +64,7 @@ public:
   /** \brief construct a Controller that uses face for transport,
    *         and uses the passed KeyChain to sign commands
    */
-  Controller(Face& face, security::v2::KeyChain& keyChain, security::Validator& validator = s_validatorNull);
+  Controller(Face& face, security::v2::KeyChain& keyChain, security::v2::Validator& validator = getAcceptAllValidator());
 
   /** \brief start command execution
    */
@@ -172,11 +169,12 @@ public:
 protected:
   Face& m_face;
   security::v2::KeyChain& m_keyChain;
-  security::Validator& m_validator;
+  security::v2::Validator& m_validator;
   security::CommandInterestSigner m_signer;
 
 private:
-  static ValidatorNull s_validatorNull;
+  static security::v2::Validator&
+  getAcceptAllValidator();
 };
 
 template<typename Dataset>

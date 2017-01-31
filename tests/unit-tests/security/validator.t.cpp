@@ -20,6 +20,7 @@
  */
 
 #include "security/validator-null.hpp"
+#include "security/validator.hpp"
 
 #include "boost-test.hpp"
 #include "identity-management-fixture.hpp"
@@ -35,13 +36,13 @@ BOOST_AUTO_TEST_SUITE(Security)
 BOOST_FIXTURE_TEST_SUITE(TestValidator, IdentityManagementV1Fixture)
 
 void
-onValidated(const shared_ptr<const Data>& data)
+onValidated()
 {
   BOOST_CHECK(true);
 }
 
 void
-onValidationFailed(const shared_ptr<const Data>& data, const std::string& failureInfo)
+onValidationFailed()
 {
   BOOST_CHECK(false);
 }
@@ -64,8 +65,8 @@ BOOST_AUTO_TEST_CASE(Null)
 
   // data must be a shared pointer
   validator.validate(*data,
-                     bind(&onValidated, _1),
-                     bind(&onValidationFailed, _1, _2));
+                     bind(&onValidated),
+                     bind(&onValidationFailed));
 }
 
 const uint8_t ecdsaSigInfo[] = {
