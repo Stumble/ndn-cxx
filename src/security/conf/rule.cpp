@@ -59,6 +59,10 @@ Rule::match(const Packet& packet) const
   return true;
 }
 
+template
+bool
+Rule::match(const Data&) const;
+
 template<class Packet>
 bool
 Rule::check(const Packet& packet) const
@@ -74,6 +78,10 @@ Rule::check(const Packet& packet) const
 
   return hasPendingResult;
 }
+
+template
+bool
+Rule::check(const Data&) const;
 
 } // namespace conf
 } // namespace security
