@@ -348,10 +348,10 @@ ValidationPolicyConfig::checkPolicy(const Data& data, const shared_ptr<Validatio
     return continueValidation(nullptr, state);
   }
 
-  if (data.getSignature().hasKeyLocator()) {
+  if (!data.getSignature().hasKeyLocator()) {
     return state->fail({ValidationError::Code::INVALID_KEY_LOCATOR, "Required key locator is missing"});
   }
-  if (data.getSignature().getKeyLocator().getType() == KeyLocator::KeyLocator_Name) {
+  if (data.getSignature().getKeyLocator().getType() != KeyLocator::KeyLocator_Name) {
     return state->fail({ValidationError::Code::INVALID_KEY_LOCATOR, "Key locator not Name"});
   }
 
